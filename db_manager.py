@@ -5,101 +5,67 @@ from hhapi import HHApi
 class DBManager:
     def __init__(self):
         self.hh_api = HHApi()
+        self.conn = psycopg2.connect(
+            host='localhost',
+            database='hh_vacancies',
+            user='postgres',
+            password='3525'
+        )
+        self.curr = self.conn.cursor()
 
     def fill_employers(self, employers):
         """Заполняет таблицу employers"""
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
+        db_employers_id = [employer[0] for employer in self.get_companies_and_vacancies_count()]
 
         for employer in employers:
-            curr.execute("INSERT INTO employers VALUES (%s, %s, %s)", (int(employer[0]), employer[1], employer[2]))
+            if int(employer[0]) not in db_employers_id:
+                self.curr.execute("INSERT INTO employers VALUES (%s, %s, %s)", (int(employer[0]), employer[1], employer[2]))
 
-        conn.commit()
-        curr.close()
-        conn.close()
+        self.conn.commit()
 
     def fill_vacancies(self, employers):
         """Заполняет таблицу vacancies"""
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
-        i = 1
+        db_vacancies_url = [vacancy[3] for vacancy in self.get_all_vacancies()]
+
+        l = len(db_vacancies_url)
+
+        k = 1
         for employer in employers:
             vacancies = self.hh_api.get_vacancies(employer[0])
             for vacancy in vacancies:
-                curr.execute("INSERT INTO vacancies VALUES (%s, %s, %s, %s, %s)", (i, vacancy['name'],
-                                                                                   vacancy['employer_id'],
-                                                                                   vacancy['salary'],
-                                                                                   vacancy['url']))
-                i += 1
-        conn.commit()
-        curr.close()
-        conn.close()
+                if vacancy['url'] not in db_vacancies_url:
+                    self.curr.execute("INSERT INTO vacancies VALUES (%s, %s, %s, %s, %s)", (k + l, vacancy['name'],
+                                                                                            vacancy['employer_id'],
+                                                                                            vacancy['salary'],
+                                                                                            vacancy['url']))
+                    k += 1
+        self.conn.commit()
 
     def get_companies_and_vacancies_count(self):
         """Получает список компаний и кол-во их вакансий"""
-        conn = conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
+        self.curr.execute("SELECT * FROM employers")
 
-        curr.execute("SELECT * FROM employers")
-
-        rows = curr.fetchall()
-        curr.close()
-        conn.close()
+        rows = self.curr.fetchall()
         return rows
 
     def get_all_vacancies(self):
         """Получает список состоящий из имени работодателя, имени вакансии, зарплаты и ссылки на вакансию"""
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
-
-        curr.execute("SELECT DISTINCT employers.employer_name, vacancy_name, salary, vacancy_url\
+        self.curr.execute("SELECT DISTINCT employers.employer_name, vacancy_name, salary, vacancy_url\
                         FROM vacancies\
                         JOIN employers USING(employer_id)")
 
-        rows = curr.fetchall()
-        curr.close()
-        conn.close()
+        rows = self.curr.fetchall()
         return rows
 
     def get_avg_salary(self):
         """Получает среднюю зарплату (вакансии, где зарплата не указана, не учитываются)"""
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
-
-        curr.execute("SELECT salary FROM vacancies")
-        rows = curr.fetchall()
-        curr.close()
-        conn.close()
+        self.curr.execute("SELECT salary FROM vacancies")
+        rows = self.curr.fetchall()
 
         s_salary = 0
         count = 0
@@ -118,19 +84,9 @@ class DBManager:
     def get_vacancies_with_higher_salary(self):
         """Получает вакансии с зарплатой выше средней"""
         avg_salary = self.get_avg_salary()
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
 
-        curr = conn.cursor()
-
-        curr.execute("SELECT DISTINCT vacancy_name, salary, vacancy_url FROM vacancies")
-        rows = curr.fetchall()
-        curr.close()
-        conn.close()
+        self.curr.execute("SELECT DISTINCT vacancy_name, salary, vacancy_url FROM vacancies")
+        rows = self.curr.fetchall()
 
         result = []
 
@@ -151,21 +107,14 @@ class DBManager:
 
         result = []
 
-        conn = psycopg2.connect(
-            host='localhost',
-            database='hh_vacancies',
-            user='postgres',
-            password='3525'
-        )
+        self.curr.execute("SELECT DISTINCT vacancy_name, salary, vacancy_url FROM vacancies")
 
-        curr = conn.cursor()
-
-        curr.execute("SELECT DISTINCT vacancy_name, salary, vacancy_url FROM vacancies")
-
-        rows = curr.fetchall()
-        curr.close()
-        conn.close()
+        rows = self.curr.fetchall()
         for row in rows:
             if keyword in row[0]:
                 result.append(row)
         return result
+
+    def close(self):
+        self.curr.close()
+        self.conn.close()
