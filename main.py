@@ -62,6 +62,9 @@ if __name__ == '__main__':
     for employer in companies:
         hh_api.get_employers_by_keyword(employer, employers)
 
+    """Создаем таблицы если они не созданы"""
+    db_manager.create_tables()
+
     """Заполняем таблицы данными"""
     db_manager.fill_employers(employers)
     db_manager.fill_vacancies(employers)
