@@ -71,11 +71,13 @@ if __name__ == '__main__':
 
     """Пример работы функций"""
 
+    k = 5
+
     companies_and_vacancies_count = db_manager.get_companies_and_vacancies_count()
 
     print("Несколько работодателей и кол-во их вакансий:")
 
-    for i in range(5):
+    for i in range(k):
         print(
             f"employer_id: {companies_and_vacancies_count[i][0]}, name: {companies_and_vacancies_count[i][1]}, кол-во вакансий: {companies_and_vacancies_count[i][2]}")
     print()
@@ -84,7 +86,7 @@ if __name__ == '__main__':
 
     print("Несколько вакансий:")
 
-    for i in range(5):
+    for i in range(k):
         salary = all_vacancies[i][2]
         if all_vacancies[i][2] is None:
             salary = 'Не указано'
@@ -101,9 +103,8 @@ if __name__ == '__main__':
 
     vacancies_with_higher_salary = db_manager.get_vacancies_with_higher_salary()
 
-    for i in range(5):
-        print(
-            f"Вакансия: {vacancies_with_higher_salary[i][0]}, Зарплата: {vacancies_with_higher_salary[i][1]}, url: {vacancies_with_higher_salary[i][2]}")
+    for i in range(k):
+        print(f"Вакансия: {vacancies_with_higher_salary[i][0]}, Зарплата: {vacancies_with_higher_salary[i][1]}, url: {vacancies_with_higher_salary[i][2]}")
 
     print()
 
@@ -111,7 +112,7 @@ if __name__ == '__main__':
 
     vacancies_with_keyword = db_manager.get_vacancies_with_keyword('разработчик')
 
-    for i in range(5):
+    for i in range(k):
         if vacancies_with_keyword[i][1] is None:
             salary = 'Не указано'
         if vacancies_with_keyword[i][1] is not None and len(vacancies_with_keyword[i][1].split()) == 2:
